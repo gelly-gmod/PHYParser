@@ -1,0 +1,4 @@
+# submodules
+test/vendor/
+# build outputs
+cmake-build-*

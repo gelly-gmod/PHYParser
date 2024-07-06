@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Always
+TabWidth: 4
+BreakBeforeBraces: Attach
+# we also don't want class constructors to look like:
+# class::class(int foo) : foo(foo) {
+# }
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+ColumnLimit: 80
+AllowShortFunctionsOnASingleLine: Inline
+PackConstructorInitializers: NextLine
