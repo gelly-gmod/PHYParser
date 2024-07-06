@@ -17,7 +17,7 @@ public:
 		Format::VectorAlign16 vertices[3];
 	};
 
-	Solid(const PHYData &data, size_t index);
+	Solid(const PHYData &data, size_t offset);
 	~Solid() = default;
 
 	[[nodiscard]] auto GetVertexCount() const noexcept -> size_t;
@@ -29,6 +29,8 @@ public:
 	 * @param magic A pointer to a char array of at least 4 bytes.
 	 */
 	auto GetMagic(char *magic) const noexcept -> void;
+
+	auto GetByteSize() const noexcept -> int;
 
 private:
 	size_t dataOffset;

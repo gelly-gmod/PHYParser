@@ -12,11 +12,8 @@ struct ivpcompacttriangle_t;
 
 namespace PHYParser {
 namespace Semantics {
-constexpr size_t SURFACE_SIZE = sizeof(Format::ivpcompactsurface_t) + sizeof(
-	                                Format::compactsurfaceheader_t);
-
-Solid::Solid(const PHYData &data, const size_t index)
-	: dataOffset(sizeof(Format::phyheader_t) + index * SURFACE_SIZE),
+Solid::Solid(const PHYData &data, size_t offset)
+	: dataOffset(offset),
 	  header(ParseHeader(data)),
 	  surface(ParseSurface(data)) {
 	ParseVertices(triangles);
@@ -36,6 +33,10 @@ auto Solid::GetTriangles() const noexcept -> const std::vector<Triangle> & {
 
 auto Solid::GetMagic(char *magic) const noexcept -> void {
 	surface->GetMagic(magic);
+}
+
+auto Solid::GetByteSize() const noexcept -> int {
+	return header->size;
 }
 
 auto Solid::ParseHeader(

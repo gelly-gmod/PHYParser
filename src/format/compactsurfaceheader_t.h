@@ -5,6 +5,7 @@
 
 namespace PHYParser::Format {
 struct compactsurfaceheader_t {
+	// some PHY implementations may split this into two structs, one 12 bytes and one 20, we just combine them
 	int size;
 	int vphysicsID; // Should be "VPHY"
 	short version;
