@@ -35,6 +35,8 @@ auto InitializeRaylib() -> void {
 
 struct RenderingContext {
 	Camera3D camera;
+	std::vector<PHYParser::Semantics::Solid> solids;
+	const char *phyFileName;
 };
 
 auto RenderFrame(const RenderingContext &ctx) -> void {
@@ -43,9 +45,30 @@ auto RenderFrame(const RenderingContext &ctx) -> void {
 
 	BeginMode3D(ctx.camera);
 	DrawGrid(10, 1.0f);
+
+	for (const auto &solid : ctx.solids) {
+		const auto &triangles = solid.GetTriangles();
+		for (const auto &triangle : triangles) {
+			Vector3 v0 = {triangle.vertices[0].x, triangle.vertices[0].y,
+			              triangle.vertices[0].z};
+			Vector3 v1 = {triangle.vertices[1].x, triangle.vertices[1].y,
+			              triangle.vertices[1].z};
+			Vector3 v2 = {triangle.vertices[2].x, triangle.vertices[2].y,
+			              triangle.vertices[2].z};
+
+			// random color
+			Color color;
+			color.r = GetRandomValue(0, 255);
+			color.g = GetRandomValue(0, 255);
+			color.b = GetRandomValue(0, 255);
+			color.a = 255;
+			DrawTriangle3D(v0, v1, v2, color);
+		}
+	}
 	EndMode3D();
 
 	DrawText("PHYParser Test", 10, 10, 20, WHITE);
+	DrawText(ctx.phyFileName, 10, 40, 20, WHITE);
 	EndDrawing();
 }
 
@@ -63,7 +86,8 @@ auto InitializeRendering() -> void {
 	InitializeRaylib();
 }
 
-auto CreateDefaultRenderingContext() -> RenderingContext {
+auto CreateDefaultRenderingContext(
+	std::vector<PHYParser::Semantics::Solid> solids) -> RenderingContext {
 	return {
 		.camera = {
 			.position = {10.0f, 10.0f, 10.0f},
@@ -72,6 +96,8 @@ auto CreateDefaultRenderingContext() -> RenderingContext {
 			.fovy = 45.0f,
 			.projection = CAMERA_PERSPECTIVE
 		},
+		.solids = std::move(solids),
+		.phyFileName = nullptr
 	};
 }
 
@@ -88,17 +114,22 @@ auto main(int argc, char **argv) -> int {
 	try {
 		const auto phy = LoadPHYFile(inputFile);
 		printf("Successfully loaded PHY file\n");
-
 		printf("Solid count: %d\n", phy.GetSolidCount());
 
+		std::vector<PHYParser::Semantics::Solid> solids;
 		for (int i = 0; i < phy.GetSolidCount(); ++i) {
 			auto solid = phy.GetSolid(i);
 			char magic[5] = {0};
 			solid.GetMagic(magic);
 			printf("Solid %d: %s\n", i, magic);
+			printf("Vertex count: %llu\n", solid.GetVertexCount());
+			printf("Triangle count: %llu\n", solid.GetTriangleCount());
+			solids.push_back(std::move(solid));
+			printf("Added to rendering context!\n");
 		}
 
-		auto ctx = CreateDefaultRenderingContext();
+		auto ctx = CreateDefaultRenderingContext(std::move(solids));
+		ctx.phyFileName = inputFile;
 		while (!WindowShouldClose()) {
 			// update camera
 			UpdateCamera(&ctx.camera, CAMERA_ORBITAL);

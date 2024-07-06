@@ -16,6 +16,13 @@ template <typename PHYDataSection>
 PHYDataSection *ViewOffsetAsSection(const PHYData &data, size_t offset) {
 	return reinterpret_cast<PHYDataSection *>(data.get() + offset);
 }
+
+template <typename PHYDataSection, typename T>
+PHYDataSection *ViewOffsetFromSection(T *section,
+                                      size_t offset) {
+	return reinterpret_cast<PHYDataSection *>(
+		reinterpret_cast<char *>(section) + offset);
+}
 }
 
 #endif //PHYDATA_H
