@@ -11,6 +11,14 @@ add_library(PHYParser STATIC
         src/format/phyheader_t.h
         src/format/compactsurfaceheader_t.h
         src/format/vector.h
+        src/format/ivpcompactsurface_t.h
+        src/semantics/PHYData.h
+        src/semantics/Solid.cpp
+        src/semantics/Solid.h
+        src/format/ivpcompactledgenode_t.h
+        src/format/ivpcompactledge_t.h
+        src/format/ivpcompactedge_t.h
+        src/format/ivpcompacttriangle_t.h
 )
 
 target_include_directories(PHYParser PUBLIC src)

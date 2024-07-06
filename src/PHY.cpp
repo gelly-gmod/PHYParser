@@ -4,52 +4,36 @@
 
 namespace PHYParser {
 PHY::PHY(ParserInput &&input) noexcept
-	: input(std::move(input)), header(ParseHeader()) {
-	for (auto i = 0; i < header.solidCount; i++) {
-		surfaceHeaders.push_back(ParseSurfaceHeader(i));
+	: input(std::move(input)) {
+	data = GetPHYData();
+	header = ParseHeader(data);
+	for (size_t i = 0; i < GetSolidCount(); ++i) {
+		solids.push_back(ParseSolid(data, i));
 	}
 }
 
-auto PHY::GetSolidCount() const -> int {
+auto PHY::GetSolidCount() const noexcept -> int {
 	return header.solidCount;
 }
 
-auto PHY::GetSolidSurfaceSize(
-	size_t solidIndex) const -> int {
-	return surfaceHeaders.at(solidIndex).surfaceSize;
-}
-
-auto PHY::GetSolidID(
-	size_t solidIndex) const -> int {
-	return surfaceHeaders.at(solidIndex).vphysicsID;
-}
-
-auto PHY::ParseHeader() const -> Format::phyheader_t {
-	const auto headerSize = sizeof(Format::phyheader_t);
-	if (input.size < headerSize) {
-		throw std::runtime_error("PHY file is too small to contain a header");
+auto PHY::GetSolid(int index) const -> Semantics::Solid {
+	if (index < 0 || index >= GetSolidCount()) {
+		throw std::out_of_range("Index out of range");
 	}
 
-	const auto header = *reinterpret_cast<const Format::phyheader_t *>(input.
-		data.get());
-
-	return header;
+	return solids[index];
 }
 
-auto PHY::ParseSurfaceHeader(
-	size_t solidIndex) const -> Format::compactsurfaceheader_t {
-	const auto surfaceHeaderSize = sizeof(Format::compactsurfaceheader_t);
-	const auto offset = sizeof(Format::phyheader_t) + solidIndex *
-	                    surfaceHeaderSize;
-	if (input.size < offset + surfaceHeaderSize) {
-		throw std::runtime_error(
-			"PHY file is too small to contain the requested surface header");
-	}
+auto PHY::GetPHYData() noexcept -> PHYData {
+	return {std::move(input.data)};
+}
 
-	const auto surfaceHeader = *reinterpret_cast<const
-		Format::compactsurfaceheader_t *>(input.
-		                                  data.get() + offset);
+auto PHY::ParseHeader(const PHYData &data) const -> Format::phyheader_t {
+	return *ViewOffsetAsSection<Format::phyheader_t>(data, 0);
+}
 
-	return surfaceHeader;
+auto PHY::ParseSolid(const PHYData &data,
+                     size_t index) const -> Semantics::Solid {
+	return {data, index};
 }
 }

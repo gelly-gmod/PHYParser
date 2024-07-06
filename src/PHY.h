@@ -2,6 +2,7 @@
 #define PHY_H
 #include "format/compactsurfaceheader_t.h"
 #include "format/phyheader_t.h"
+#include "semantics/Solid.h"
 
 #include <memory>
 #include <vector>
@@ -38,21 +39,19 @@ public:
 	PHY(ParserInput &&input) noexcept;
 	~PHY() = default;
 
-	[[nodiscard]] auto GetSolidCount() const -> int;
-	[[nodiscard]] auto GetSolidSurfaceSize(size_t solidIndex) const -> int;
-	/**
-	 * Useful for verifying that a solid is specified in new or old format.
-	 */
-	[[nodiscard]] auto GetSolidID(size_t solidIndex) const -> int;
+	[[nodiscard]] auto GetSolidCount() const noexcept -> int;
+	[[nodiscard]] auto GetSolid(int index) const -> Semantics::Solid;
 
 private:
 	ParserInput input;
 	Format::phyheader_t header;
-	std::vector<Format::compactsurfaceheader_t> surfaceHeaders;
+	std::vector<Semantics::Solid> solids;
+	PHYData data;
 
-	[[nodiscard]] auto ParseHeader() const -> Format::phyheader_t;
-	[[nodiscard]] auto ParseSurfaceHeader(
-		size_t solidIndex) const -> Format::compactsurfaceheader_t;
+	auto GetPHYData() noexcept -> PHYData;
+	auto ParseHeader(const PHYData &data) const -> Format::phyheader_t;
+	auto ParseSolid(const PHYData &data,
+	                size_t index) const -> Semantics::Solid;
 };
 }
 

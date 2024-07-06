@@ -88,22 +88,20 @@ auto main(int argc, char **argv) -> int {
 	try {
 		const auto phy = LoadPHYFile(inputFile);
 		printf("Successfully loaded PHY file\n");
+
 		printf("Solid count: %d\n", phy.GetSolidCount());
 
-		for (auto i = 0; i < phy.GetSolidCount(); i++) {
-			printf("Solid %d surface size: %d\n", i,
-			       phy.GetSolidSurfaceSize(i));
-
-			char id[5];
-			const auto vphysicsID = phy.GetSolidID(i);
-			memcpy(id, &vphysicsID, 4);
-			id[4] = '\0';
-
-			printf("Solid %d ID: '%s'\n", i, id);
+		for (int i = 0; i < phy.GetSolidCount(); ++i) {
+			auto solid = phy.GetSolid(i);
+			char magic[5] = {0};
+			solid.GetMagic(magic);
+			printf("Solid %d: %s\n", i, magic);
 		}
 
-		const auto ctx = CreateDefaultRenderingContext();
+		auto ctx = CreateDefaultRenderingContext();
 		while (!WindowShouldClose()) {
+			// update camera
+			UpdateCamera(&ctx.camera, CAMERA_ORBITAL);
 			RenderFrame(ctx);
 		}
 	} catch (const std::exception &e) {
