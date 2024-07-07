@@ -129,7 +129,7 @@ auto CreateDefaultRenderingContext(
 		mesh.texcoords = nullptr;
 		mesh.normals = nullptr;
 		mesh.tangents = nullptr;
-		mesh.colors = nullptr;
+		mesh.colors = new unsigned char[mesh.vertexCount * 4];
 		mesh.indices = new unsigned short[mesh.triangleCount * 3];
 
 		for (size_t i = 0; i < mesh.vertexCount; i += 3) {
@@ -153,12 +153,19 @@ auto CreateDefaultRenderingContext(
 			mesh.indices[i] = i;
 			mesh.indices[i + 1] = i + 1;
 			mesh.indices[i + 2] = i + 2;
+
+			for (int j = 0; j < 3; ++j) {
+				mesh.colors[i * 4 + j * 4] = GetRandomValue(0, 255);
+				mesh.colors[i * 4 + j * 4 + 1] = GetRandomValue(0, 255);
+				mesh.colors[i * 4 + j * 4 + 2] = GetRandomValue(0, 255);
+				mesh.colors[i * 4 + j * 4 + 3] = 255;
+			}
 		}
 
 		UploadMesh(&mesh, false);
 		delete[] mesh.vertices;
 		delete[] mesh.indices;
-
+		delete[] mesh.colors;
 		auto model = LoadModelFromMesh(mesh);
 		ctx.models.push_back(model);
 	}
