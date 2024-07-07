@@ -6,6 +6,7 @@ enum class ModelType : short {
 	IVPCompactSurface = 0x0,
 	// deprecated
 	IVPMOPP = 0x1,
+	Unknown = 0x2,
 };
 }
 

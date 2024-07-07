@@ -22,8 +22,10 @@ Solid::Solid(const PHYData &data, size_t offset)
 		moppHeader = ParseMOPPHeader(data);
 		mopp = ParseMOPPSurface(data);
 		ParseMOPPVertices(triangles);
-	} else {
+	} else if (header->modelType == static_cast<short>(Format::ModelType::IVPCompactSurface)) {
 		ParseVertices(triangles);
+	} else {
+		throw UnsupportedModelType(Format::ModelType::Unknown);
 	}
 }
 
