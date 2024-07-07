@@ -1,5 +1,6 @@
 #include "Solid.h"
 
+#include "exceptions/UnsupportedModelType.h"
 #include "format/ivpcompactledgenode_t.h"
 #include "format/ivpcompacttriangle_t.h"
 #include "format/phyheader_t.h"
@@ -16,6 +17,11 @@ Solid::Solid(const PHYData &data, size_t offset)
 	: dataOffset(offset),
 	  header(ParseHeader(data)),
 	  surface(ParseSurface(data)) {
+	// atleast for now, we don't support IVPMOPP
+	if (header->modelType == static_cast<short>(Format::ModelType::IVPMOPP)) {
+		throw UnsupportedModelType(Format::ModelType::IVPMOPP);
+	}
+
 	ParseVertices(triangles);
 }
 

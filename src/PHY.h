@@ -36,7 +36,7 @@ public:
 		}
 	};
 
-	PHY(ParserInput &&input) noexcept;
+	PHY(ParserInput &&input);
 	~PHY() = default;
 
 	[[nodiscard]] auto GetSolidCount() const noexcept -> int;

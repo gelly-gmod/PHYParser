@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include "PHY.h"
 #include "open-phy-file-dialog.h"
+#include "exceptions/UnsupportedModelType.h"
 
 #include <cstdio>
 #include <optional>
@@ -88,9 +89,9 @@ auto RenderFrame(const RenderingContext &ctx) -> void {
 }
 
 auto InitializeRendering() -> void {
-	SetConfigFlags(FLAG_MSAA_4X_HINT);
+	SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
 	SetTraceLogLevel(LOG_ALL);
-	SetTraceLogCallback([](int logLevel, const char *text, va_list args) {
+	SetTraceLogCallback([](int _, const char *text, va_list args) {
 		// format text
 		char buffer[1024];
 		vsnprintf(buffer, sizeof(buffer), text, args);
@@ -151,12 +152,17 @@ auto main() -> int {
 			UpdateCamera(&ctx.camera, CAMERA_ORBITAL);
 			RenderFrame(ctx);
 		}
+	} catch (const PHYParser::UnsupportedModelType &e) {
+		printf("Unsupported model type: %d\nPHYParser error: '%s'\n",
+		       e.GetModelType(), e.what());
+		CloseWindow();
+		return -1;
 	} catch (const std::exception &e) {
-		printf("Error: %s\n", e.what());
+		printf("Generic error: %s\n", e.what());
+		CloseWindow();
 		return -1;
 	}
 
 	CloseWindow();
-
 	return 0;
 }

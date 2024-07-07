@@ -19,6 +19,8 @@ add_library(PHYParser STATIC
         src/format/ivpcompactledge_t.h
         src/format/ivpcompactedge_t.h
         src/format/ivpcompacttriangle_t.h
+        src/exceptions/UnsupportedModelType.h
+        src/format/modeltype.h
 )
 
 target_include_directories(PHYParser PUBLIC src)

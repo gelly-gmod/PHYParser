@@ -5,7 +5,7 @@
 constexpr unsigned int VPHY = 1497911382;
 
 namespace PHYParser {
-PHY::PHY(ParserInput &&input) noexcept
+PHY::PHY(ParserInput &&input)
 	: input(std::move(input)) {
 	data = GetPHYData();
 	header = ParseHeader(data);
