@@ -70,6 +70,20 @@ auto RenderFrame(const RenderingContext &ctx) -> void {
 
 	DrawText("PHYParser Test", 10, 10, 20, WHITE);
 	DrawText(ctx.phyFileName, 10, 40, 20, WHITE);
+
+	auto solidInfoY = 70;
+	auto solidCount = 0;
+	for (const auto &solid : ctx.solids) {
+		char solidInfo[1024] = {0};
+		snprintf(solidInfo, sizeof(solidInfo),
+		         "Solid %d: %llu vertices, %llu triangles",
+		         solidCount++, solid.GetVertexCount(),
+		         solid.GetTriangleCount());
+
+		DrawText(solidInfo, 10, solidInfoY, 20, WHITE);
+		solidInfoY += 30;
+	}
+
 	EndDrawing();
 }
 
@@ -91,9 +105,9 @@ auto CreateDefaultRenderingContext(
 	std::vector<PHYParser::Semantics::Solid> solids) -> RenderingContext {
 	return {
 		.camera = {
-			.position = {10.0f, 10.0f, 10.0f},
+			.position = {10.0f, -10.0f, 10.0f},
 			.target = {0.0f, 0.0f, 0.0f},
-			.up = {0.0f, 1.0f, 0.0f},
+			.up = {0.0f, -1.0f, 0.0f},
 			.fovy = 45.0f,
 			.projection = CAMERA_PERSPECTIVE
 		},
@@ -102,7 +116,7 @@ auto CreateDefaultRenderingContext(
 	};
 }
 
-auto main(int argc, char **argv) -> int {
+auto main() -> int {
 	InitializeRendering();
 	char inputFile[1024] = {0};
 
@@ -141,6 +155,8 @@ auto main(int argc, char **argv) -> int {
 		printf("Error: %s\n", e.what());
 		return -1;
 	}
+
+	CloseWindow();
 
 	return 0;
 }

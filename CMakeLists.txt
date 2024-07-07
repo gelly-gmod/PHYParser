@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(PHYParser)
 
-option(BUILD_TEST "Builds the test program" ON)
+option(BUILD_PHYPARSER_TEST "Builds the test program" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -23,6 +23,6 @@ add_library(PHYParser STATIC
 
 target_include_directories(PHYParser PUBLIC src)
 
-if (BUILD_TEST)
+if (BUILD_PHYPARSER_TEST)
     add_subdirectory(test)
 endif ()
