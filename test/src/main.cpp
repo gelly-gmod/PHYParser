@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include "PHY.h"
+#include "open-phy-file-dialog.h"
 
 #include <cstdio>
 #include <optional>
@@ -102,14 +103,15 @@ auto CreateDefaultRenderingContext(
 }
 
 auto main(int argc, char **argv) -> int {
-	if (argc < 2) {
-		printf("Usage: %s <input PHY file>\n", argv[0]);
+	InitializeRendering();
+	char inputFile[1024] = {0};
+
+	if (const auto result = util::OpenPhyFileDialog(
+		inputFile, sizeof(inputFile)); !result) {
+		printf("Failed to open file dialog\n");
 		return -1;
 	}
 
-	InitializeRendering();
-
-	char *inputFile = argv[1];
 	printf("Parsing PHY file: %s\n", inputFile);
 	try {
 		const auto phy = LoadPHYFile(inputFile);

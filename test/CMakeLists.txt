@@ -3,7 +3,9 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(vendor/raylib)
 
-add_executable(PHYParserTest src/main.cpp)
+add_executable(PHYParserTest src/main.cpp
+        src/open-phy-file-dialog.cpp
+        src/open-phy-file-dialog.h)
 target_include_directories(
         PHYParserTest
         PUBLIC
