@@ -41,7 +41,8 @@ auto BSP::ParseModels(const PHYData &data,
 		parsedModel.solids.reserve(model->solidCount);
 
 		auto solidOffset = reinterpret_cast<size_t>(model + 1);
-		solidOffset -= reinterpret_cast<size_t>(data.get()); // convert it to a relative offset
+		solidOffset -= reinterpret_cast<size_t>(data.get());
+		// convert it to a relative offset (solids assume the origin is data.get())
 
 		// model is a pointer to the actual file data, so we can simply cast it to a size_t
 		for (int i = 0; i < model->solidCount; i++) {

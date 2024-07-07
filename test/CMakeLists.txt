@@ -5,7 +5,9 @@ add_subdirectory(vendor/raylib)
 
 add_executable(PHYParserTest src/main.cpp
         src/open-phy-file-dialog.cpp
-        src/open-phy-file-dialog.h)
+        src/open-phy-file-dialog.h
+        src/prompt.cpp
+        src/prompt.h)
 target_include_directories(
         PHYParserTest
         PUBLIC

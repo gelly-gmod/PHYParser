@@ -3,6 +3,7 @@
 #include <raylib.h>
 #include "PHY.h"
 #include "open-phy-file-dialog.h"
+#include "prompt.h"
 #include "exceptions/UnsupportedModelType.h"
 
 #include <cstdio>
@@ -117,6 +118,7 @@ auto InitializeRendering() -> void {
 	});
 
 	InitializeRaylib();
+	DisableCursor();
 }
 
 auto CreateDefaultRenderingContext(
@@ -237,13 +239,22 @@ auto main() -> int {
 		const auto loadEnd = std::chrono::high_resolution_clock::now();
 		const auto loadTimeMs = std::chrono::duration<float, std::milli>(loadEnd - loadStart).count();
 
+		if (bmodels.size() > 1) {
+			// ask the user if they want to load all models
+			if (!util::Prompt("Multiple models detected",
+			                  "Load all models? If you do, you may visualize unrelated models like func_occluders or func_illusionary instances which can clog up the visualizer. Continue?")) {
+				bmodels.resize(1);
+			}
+		}
+
 		auto ctx = CreateDefaultRenderingContext(std::move(bmodels), std::move(solids), loadTimeMs);
 		ctx.phyFileName = inputFile;
 
 		while (!WindowShouldClose()) {
 			// update camera
-			UpdateCamera(&ctx.camera, CAMERA_ORBITAL);
+			UpdateCamera(&ctx.camera, CAMERA_FREE);
 			RenderFrame(ctx);
+			// lock mouse to window
 
 			if (IsKeyPressed(KEY_SPACE)) {
 				ctx.showWireframe = !ctx.showWireframe;
