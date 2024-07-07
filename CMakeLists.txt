@@ -21,6 +21,11 @@ add_library(PHYParser STATIC
         src/format/ivpcompacttriangle_t.h
         src/exceptions/UnsupportedModelType.h
         src/format/modeltype.h
+        src/format/bsp/dheader_t.h
+        src/format/bsp/lump_t.h
+        src/format/bsp/dphysmodel_t.h
+        src/BSP.cpp
+        src/BSP.h
 )
 
 target_include_directories(PHYParser PUBLIC src)
