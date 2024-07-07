@@ -3,6 +3,8 @@
 
 #include "PHYData.h"
 #include "format/ivpcompactledgenode_t.h"
+#include "format/ivpcompactmopp_t.h"
+#include "format/moppsurfaceheader_t.h"
 
 #include <vector>
 #include <format/compactsurfaceheader_t.h>
@@ -35,15 +37,23 @@ public:
 private:
 	size_t dataOffset;
 	Format::compactsurfaceheader_t *header;
+	Format::moppsurfaceheader_t *moppHeader;
 	Format::ivpcompactsurface_t *surface;
+	Format::ivpcompactmopp_t *mopp;
+
 	std::vector<Triangle> triangles;
 
 	auto ParseHeader(
 		const PHYData &data) const -> Format::compactsurfaceheader_t *;
+	auto ParseMOPPHeader(
+		const PHYData &data) const -> Format::moppsurfaceheader_t *;
+	auto ParseMOPPSurface(
+		const PHYData &data) const -> Format::ivpcompactmopp_t *;
 	auto ParseSurface(
 		const PHYData &data) const -> Format::ivpcompactsurface_t *;
 	auto ParseVertices(
 		std::vector<Triangle> &triangles) const -> void;
+	auto ParseMOPPVertices(std::vector<Triangle> &triangles) const -> void;
 	auto ConvertLedgeToVertices(Format::ivpcompactledge_t *node,
 	                            std::vector<Triangle> &triangles) const ->
 		void;

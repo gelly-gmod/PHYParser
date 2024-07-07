@@ -19,10 +19,12 @@ Solid::Solid(const PHYData &data, size_t offset)
 	  surface(ParseSurface(data)) {
 	// atleast for now, we don't support IVPMOPP
 	if (header->modelType == static_cast<short>(Format::ModelType::IVPMOPP)) {
-		throw UnsupportedModelType(Format::ModelType::IVPMOPP);
+		moppHeader = ParseMOPPHeader(data);
+		mopp = ParseMOPPSurface(data);
+		ParseMOPPVertices(triangles);
+	} else {
+		ParseVertices(triangles);
 	}
-
-	ParseVertices(triangles);
 }
 
 auto Solid::GetVertexCount() const noexcept -> size_t {
@@ -42,13 +44,25 @@ auto Solid::GetMagic(char *magic) const noexcept -> void {
 }
 
 auto Solid::GetByteSize() const noexcept -> int {
-	return header->size;
+	return header->modelType == static_cast<short>(Format::ModelType::IVPMOPP) ? moppHeader->size : header->size;
 }
 
 auto Solid::ParseHeader(
 	const PHYData &data) const -> Format::compactsurfaceheader_t * {
 	return ViewOffsetAsSection<Format::compactsurfaceheader_t>(
 		data, dataOffset);
+}
+
+auto Solid::ParseMOPPHeader(
+	const PHYData &data) const -> Format::moppsurfaceheader_t * {
+	return ViewOffsetAsSection<Format::moppsurfaceheader_t>(
+		data, dataOffset);
+}
+
+auto Solid::ParseMOPPSurface(
+	const PHYData &data) const -> Format::ivpcompactmopp_t * {
+	return ViewOffsetAsSection<Format::ivpcompactmopp_t>(
+		data, dataOffset + sizeof(Format::moppsurfaceheader_t));
 }
 
 auto Solid::ParseSurface(
@@ -79,6 +93,30 @@ auto Solid::ParseVertices(
 	}
 }
 
+auto Solid::ParseMOPPVertices(std::vector<Triangle> &triangles) const -> void {
+	// MOPPs are optimized structures for dump and load meshes--typically for displacements. It's old, but
+	// still present in iconic maps so we really can't ignore it, even if it's no longer used.
+
+	// MOPPs dump ledges and don't use the typical tree structure, so we can just iterate through the ledges until we hit the point array.
+	// Once we hit the point array, we can just iterate through the triangles.
+
+	// unfortunately though, MOPPs are made for speed and therefore a lot of this is byte-level manipulation.
+	char *currentLedge = reinterpret_cast<char *>(mopp) + mopp->offset_ledges + mopp->size_convex_hull;
+	char *pointArray = currentLedge + reinterpret_cast<Format::ivpcompactledge_t *>(currentLedge)->c_point_offset;
+
+	// run through the ledge dump until we hit the point array
+	while (currentLedge < pointArray) {
+		auto *ledge = reinterpret_cast<Format::ivpcompactledge_t *>(currentLedge);
+		if (ledge->unknown != 0) {
+			// According to some file format RE, there's a good chance that if this is not 0 we're in the wrong place.
+			break;
+		}
+
+		ConvertLedgeToVertices(ledge, triangles);
+		currentLedge += ledge->size_div_16 * 16;
+	}
+}
+
 auto Solid::ConvertLedgeToVertices(Format::ivpcompactledge_t *node,
                                    std::vector<Triangle> &triangles) const ->
 	void {
@@ -89,6 +127,10 @@ auto Solid::ConvertLedgeToVertices(Format::ivpcompactledge_t *node,
 		Format::ivpcompacttriangle_t *>
 	(
 		node + 1);
+
+	if (triangleCount <= 0) {
+		return;
+	}
 
 	for (int i = 0; i < triangleCount; i++) {
 		Triangle triangle = {};

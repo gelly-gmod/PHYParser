@@ -46,6 +46,7 @@ struct RenderingContext {
 	const char *phyFileName;
 	bool showWireframe = true;
 	float loadTimeMs = 0.0f;
+	int totalTriangles = 0;
 };
 
 auto RenderFrame(const RenderingContext &ctx) -> void {
@@ -98,7 +99,7 @@ auto RenderFrame(const RenderingContext &ctx) -> void {
 
 	DrawText("Press SPACE to toggle wireframe", 10, screenHeight - 30, 20,
 	         WHITE);
-	DrawText(TextFormat("Load time: %.2fms", ctx.loadTimeMs), 10,
+	DrawText(TextFormat("Load time: %.2fms | Total triangles: %d triangles", ctx.loadTimeMs, ctx.totalTriangles), 10,
 	         screenHeight - 60, 20, WHITE);
 
 	EndDrawing();
@@ -159,6 +160,8 @@ auto CreateDefaultRenderingContext(
 		mesh.indices = new unsigned short[mesh.triangleCount * 3];
 
 		for (size_t i = 0; i < mesh.vertexCount; i += 3) {
+			ctx.totalTriangles++;
+
 			Vector3 v0 = {solid.GetTriangles()[i / 3].vertices[0].x,
 			              solid.GetTriangles()[i / 3].vertices[0].y,
 			              solid.GetTriangles()[i / 3].vertices[0].z};
