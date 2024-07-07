@@ -2,6 +2,10 @@
 #define LUMP_T_H
 
 namespace PHYParser::BSP::Format {
+enum LumpType {
+	LUMP_PHYSCOLLIDE = 29,
+};
+
 struct lump_t {
 	int fileofs;
 	int filelen;

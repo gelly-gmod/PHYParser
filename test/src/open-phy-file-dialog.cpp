@@ -14,7 +14,7 @@ bool OpenPhyFileDialog(char *outPath, size_t outPathSize) {
 	ofn.lpstrFile = outPath;
 	ofn.lpstrFile[0] = '\0';
 	ofn.nMaxFile = outPathSize;
-	ofn.lpstrFilter = "PHY Files\0*.phy\0";
+	ofn.lpstrFilter = "PHY Files\0*.phy\0BSP Files\0*.bsp\0";
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = NULL;
 	ofn.nMaxFileTitle = 0;

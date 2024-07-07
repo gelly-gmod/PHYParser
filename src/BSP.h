@@ -28,7 +28,7 @@ public:
 	};
 
 	BSP(PHY::ParserInput &&input);
-	~BSP();
+	~BSP() = default;
 
 	[[nodiscard]] auto GetModelCount() const noexcept -> int;
 	/**
@@ -47,10 +47,12 @@ private:
 	[[nodiscard]] auto ParseHeader(
 		const PHYData &data) const -> Format::dheader_t;
 
-	[[nodiscard]] auto ParseModel(
+	auto ParseModels(
 		const PHYData &data,
 		const Format::lump_t &physCollideLump,
-		size_t index) const -> Model;
+		std::vector<Model> &models) const -> void;
+
+	[[nodiscard]] auto GetBSPData() noexcept -> PHYData;
 };
 
 } // BSP

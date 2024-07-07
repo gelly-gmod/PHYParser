@@ -7,6 +7,11 @@ BreakBeforeBraces: Attach
 # class::class(int foo) : foo(foo) {
 # }
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
-ColumnLimit: 80
+ColumnLimit: 120
 AllowShortFunctionsOnASingleLine: Inline
 PackConstructorInitializers: NextLine
+# we also want comments to be formatted like:
+# auto fart = 2; // this is a comment
+# auto foo = 3;  // this is another comment, comment should be aligned
+PenaltyBreakComment: 0
+AlignTrailingComments: true

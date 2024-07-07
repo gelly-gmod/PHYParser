@@ -1,3 +1,5 @@
+#include "BSP.h"
+
 #include <raylib.h>
 #include "PHY.h"
 #include "open-phy-file-dialog.h"
@@ -11,7 +13,7 @@
 int screenWidth = 800;
 int screenHeight = 600;
 
-auto LoadPHYFile(const char *filepath) -> PHYParser::PHY {
+auto LoadPHYFile(const char *filepath) -> PHYParser::PHY::ParserInput {
 	FILE *phyFile;
 	fopen_s(&phyFile, filepath, "rb");
 
@@ -28,7 +30,7 @@ auto LoadPHYFile(const char *filepath) -> PHYParser::PHY {
 	fread(data.get(), 1, fileSize, phyFile);
 	fclose(phyFile);
 
-	return {{std::move(data), fileSize}};
+	return {std::move(data), fileSize};
 }
 
 auto InitializeRaylib() -> void {
@@ -38,6 +40,7 @@ auto InitializeRaylib() -> void {
 
 struct RenderingContext {
 	Camera3D camera;
+	std::vector<PHYParser::BSP::BSP::Model> bmodels;
 	std::vector<PHYParser::Semantics::Solid> solids;
 	std::vector<Model> models;
 	const char *phyFileName;
@@ -82,6 +85,17 @@ auto RenderFrame(const RenderingContext &ctx) -> void {
 		solidInfoY += 30;
 	}
 
+	auto modelInfoY = solidInfoY + 30;
+	auto modelCount = 0;
+	for (const auto &model : ctx.bmodels) {
+		char modelInfo[1024] = {0};
+		snprintf(modelInfo, sizeof(modelInfo),
+		         "Model '*%d': %llu solids", modelCount++, model.solids.size());
+
+		DrawText(modelInfo, 10, modelInfoY, 20, WHITE);
+		modelInfoY += 30;
+	}
+
 	DrawText("Press SPACE to toggle wireframe", 10, screenHeight - 30, 20,
 	         WHITE);
 	DrawText(TextFormat("Load time: %.2fms", ctx.loadTimeMs), 10,
@@ -105,6 +119,7 @@ auto InitializeRendering() -> void {
 }
 
 auto CreateDefaultRenderingContext(
+	std::vector<PHYParser::BSP::BSP::Model> models,
 	std::vector<PHYParser::Semantics::Solid> solids,
 	float loadTimeMs) -> RenderingContext {
 	RenderingContext ctx = {
@@ -115,13 +130,24 @@ auto CreateDefaultRenderingContext(
 			.fovy = 45.0f,
 			.projection = CAMERA_PERSPECTIVE
 		},
+		.bmodels = std::move(models),
 		.solids = std::move(solids),
 		.phyFileName = nullptr,
 		.showWireframe = true,
 		.loadTimeMs = loadTimeMs
 	};
 
-	for (const auto &solid : ctx.solids) {
+	std::vector<PHYParser::Semantics::Solid> mergedSolids;
+	mergedSolids.reserve(ctx.bmodels.size() + ctx.solids.size());
+
+	// copy each solid from the BSP models
+	for (const auto &model : ctx.bmodels) {
+		mergedSolids.insert(mergedSolids.end(), model.solids.begin(), model.solids.end());
+	}
+
+	mergedSolids.insert(mergedSolids.end(), ctx.solids.begin(), ctx.solids.end());
+
+	for (const auto &solid : mergedSolids) {
 		Mesh mesh = {0};
 		mesh.vertexCount = solid.GetVertexCount();
 		mesh.triangleCount = solid.GetTriangleCount();
@@ -185,29 +211,32 @@ auto main() -> int {
 
 	printf("Parsing PHY file: %s\n", inputFile);
 	try {
-		const auto start = std::chrono::high_resolution_clock::now();
-		const auto phy = LoadPHYFile(inputFile);
-		const auto end = std::chrono::high_resolution_clock::now();
-		const auto loadTimeMs = std::chrono::duration<float, std::milli>(
-			end - start).count();
-
-		printf("Successfully loaded PHY file\n");
-		printf("Solid count: %d\n", phy.GetSolidCount());
-
-		std::vector<PHYParser::Semantics::Solid> solids;
-		for (int i = 0; i < phy.GetSolidCount(); ++i) {
-			auto solid = phy.GetSolid(i);
-			char magic[5] = {0};
-			solid.GetMagic(magic);
-			printf("Solid %d: %s\n", i, magic);
-			printf("Vertex count: %llu\n", solid.GetVertexCount());
-			printf("Triangle count: %llu\n", solid.GetTriangleCount());
-			solids.push_back(std::move(solid));
-			printf("Added to rendering context!\n");
+		if (const auto ext = GetFileExtension(inputFile); strcmp(ext, ".phy") != 0 && strcmp(ext, ".bsp") != 0) {
+			throw std::runtime_error("Invalid file extension: " + std::string(ext));
 		}
 
-		auto ctx = CreateDefaultRenderingContext(std::move(solids), loadTimeMs);
+		std::vector<PHYParser::Semantics::Solid> solids;
+		std::vector<PHYParser::BSP::BSP::Model> bmodels;
+
+		const auto loadStart = std::chrono::high_resolution_clock::now();
+		if (strcmp(GetFileExtension(inputFile), ".phy") == 0) {
+			const auto phy = PHYParser::PHY{LoadPHYFile(inputFile)};
+
+			for (int i = 0; i < phy.GetSolidCount(); ++i) {
+				solids.push_back(phy.GetSolid(i));
+			}
+		} else {
+			const auto bsp = PHYParser::BSP::BSP{LoadPHYFile(inputFile)};
+			for (int i = 0; i < bsp.GetModelCount(); ++i) {
+				bmodels.push_back(bsp.GetModel(i));
+			}
+		}
+		const auto loadEnd = std::chrono::high_resolution_clock::now();
+		const auto loadTimeMs = std::chrono::duration<float, std::milli>(loadEnd - loadStart).count();
+
+		auto ctx = CreateDefaultRenderingContext(std::move(bmodels), std::move(solids), loadTimeMs);
 		ctx.phyFileName = inputFile;
+
 		while (!WindowShouldClose()) {
 			// update camera
 			UpdateCamera(&ctx.camera, CAMERA_ORBITAL);
