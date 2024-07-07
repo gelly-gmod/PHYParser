@@ -6,9 +6,10 @@
 #include <cstdio>
 #include <optional>
 #include <stdexcept>
+#include <chrono>
 
-constexpr int screenWidth = 800;
-constexpr int screenHeight = 600;
+int screenWidth = 800;
+int screenHeight = 600;
 
 auto LoadPHYFile(const char *filepath) -> PHYParser::PHY {
 	FILE *phyFile;
@@ -38,35 +39,31 @@ auto InitializeRaylib() -> void {
 struct RenderingContext {
 	Camera3D camera;
 	std::vector<PHYParser::Semantics::Solid> solids;
+	std::vector<Model> models;
 	const char *phyFileName;
+	bool showWireframe = true;
+	float loadTimeMs = 0.0f;
 };
 
 auto RenderFrame(const RenderingContext &ctx) -> void {
+	// dimensions may have changed
+	screenWidth = GetScreenWidth();
+	screenHeight = GetScreenHeight();
+
 	BeginDrawing();
 	ClearBackground(BLACK);
 
 	BeginMode3D(ctx.camera);
 	DrawGrid(10, 1.0f);
 
-	for (const auto &solid : ctx.solids) {
-		const auto &triangles = solid.GetTriangles();
-		for (const auto &triangle : triangles) {
-			Vector3 v0 = {triangle.vertices[0].x, triangle.vertices[0].y,
-			              triangle.vertices[0].z};
-			Vector3 v1 = {triangle.vertices[1].x, triangle.vertices[1].y,
-			              triangle.vertices[1].z};
-			Vector3 v2 = {triangle.vertices[2].x, triangle.vertices[2].y,
-			              triangle.vertices[2].z};
-
-			// random color
-			Color color;
-			color.r = GetRandomValue(0, 255);
-			color.g = GetRandomValue(0, 255);
-			color.b = GetRandomValue(0, 255);
-			color.a = 255;
-			DrawTriangle3D(v0, v1, v2, color);
+	for (const auto &model : ctx.models) {
+		if (ctx.showWireframe) {
+			DrawModelWires(model, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
+		} else {
+			DrawModel(model, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
 		}
 	}
+
 	EndMode3D();
 
 	DrawText("PHYParser Test", 10, 10, 20, WHITE);
@@ -84,6 +81,11 @@ auto RenderFrame(const RenderingContext &ctx) -> void {
 		DrawText(solidInfo, 10, solidInfoY, 20, WHITE);
 		solidInfoY += 30;
 	}
+
+	DrawText("Press SPACE to toggle wireframe", 10, screenHeight - 30, 20,
+	         WHITE);
+	DrawText(TextFormat("Load time: %.2fms", ctx.loadTimeMs), 10,
+	         screenHeight - 60, 20, WHITE);
 
 	EndDrawing();
 }
@@ -103,8 +105,9 @@ auto InitializeRendering() -> void {
 }
 
 auto CreateDefaultRenderingContext(
-	std::vector<PHYParser::Semantics::Solid> solids) -> RenderingContext {
-	return {
+	std::vector<PHYParser::Semantics::Solid> solids,
+	float loadTimeMs) -> RenderingContext {
+	RenderingContext ctx = {
 		.camera = {
 			.position = {10.0f, -10.0f, 10.0f},
 			.target = {0.0f, 0.0f, 0.0f},
@@ -113,8 +116,54 @@ auto CreateDefaultRenderingContext(
 			.projection = CAMERA_PERSPECTIVE
 		},
 		.solids = std::move(solids),
-		.phyFileName = nullptr
+		.phyFileName = nullptr,
+		.showWireframe = true,
+		.loadTimeMs = loadTimeMs
 	};
+
+	for (const auto &solid : ctx.solids) {
+		Mesh mesh = {0};
+		mesh.vertexCount = solid.GetVertexCount();
+		mesh.triangleCount = solid.GetTriangleCount();
+		mesh.vertices = new float[mesh.vertexCount * 3];
+		mesh.texcoords = nullptr;
+		mesh.normals = nullptr;
+		mesh.tangents = nullptr;
+		mesh.colors = nullptr;
+		mesh.indices = new unsigned short[mesh.triangleCount * 3];
+
+		for (size_t i = 0; i < mesh.vertexCount; i += 3) {
+			Vector3 v0 = {solid.GetTriangles()[i / 3].vertices[0].x,
+			              solid.GetTriangles()[i / 3].vertices[0].y,
+			              solid.GetTriangles()[i / 3].vertices[0].z};
+
+			Vector3 v1 = {solid.GetTriangles()[i / 3].vertices[1].x,
+			              solid.GetTriangles()[i / 3].vertices[1].y,
+			              solid.GetTriangles()[i / 3].vertices[1].z};
+
+			Vector3 v2 = {solid.GetTriangles()[i / 3].vertices[2].x,
+			              solid.GetTriangles()[i / 3].vertices[2].y,
+			              solid.GetTriangles()[i / 3].vertices[2].z};
+
+			auto *vertices = reinterpret_cast<Vector3 *>(mesh.vertices);
+			vertices[i] = v0;
+			vertices[i + 1] = v1;
+			vertices[i + 2] = v2;
+
+			mesh.indices[i] = i;
+			mesh.indices[i + 1] = i + 1;
+			mesh.indices[i + 2] = i + 2;
+		}
+
+		UploadMesh(&mesh, false);
+		delete[] mesh.vertices;
+		delete[] mesh.indices;
+
+		auto model = LoadModelFromMesh(mesh);
+		ctx.models.push_back(model);
+	}
+
+	return ctx;
 }
 
 auto main() -> int {
@@ -129,7 +178,12 @@ auto main() -> int {
 
 	printf("Parsing PHY file: %s\n", inputFile);
 	try {
+		const auto start = std::chrono::high_resolution_clock::now();
 		const auto phy = LoadPHYFile(inputFile);
+		const auto end = std::chrono::high_resolution_clock::now();
+		const auto loadTimeMs = std::chrono::duration<float, std::milli>(
+			end - start).count();
+
 		printf("Successfully loaded PHY file\n");
 		printf("Solid count: %d\n", phy.GetSolidCount());
 
@@ -145,12 +199,16 @@ auto main() -> int {
 			printf("Added to rendering context!\n");
 		}
 
-		auto ctx = CreateDefaultRenderingContext(std::move(solids));
+		auto ctx = CreateDefaultRenderingContext(std::move(solids), loadTimeMs);
 		ctx.phyFileName = inputFile;
 		while (!WindowShouldClose()) {
 			// update camera
 			UpdateCamera(&ctx.camera, CAMERA_ORBITAL);
 			RenderFrame(ctx);
+
+			if (IsKeyPressed(KEY_SPACE)) {
+				ctx.showWireframe = !ctx.showWireframe;
+			}
 		}
 	} catch (const PHYParser::UnsupportedModelType &e) {
 		printf("Unsupported model type: %d\nPHYParser error: '%s'\n",
