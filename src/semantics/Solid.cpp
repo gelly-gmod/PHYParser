@@ -84,19 +84,23 @@ auto Solid::ParseVertices(
 		Format::ivpcompactledgenode_t>(
 		surface, surface->offset_ledgetree_root);
 
-	ParseTerminalNodes(triangles, node);
-}
+	std::stack<Format::ivpcompactledgenode_t *> stack = {};
+	stack.push(node);
 
-auto Solid::ParseTerminalNodes(std::vector<Triangle> &triangles, Format::ivpcompactledgenode_t *node) const -> void {
-	if (!node) {
-		return;
-	}
+	while (!stack.empty()) {
+		node = stack.top();
+		stack.pop();
 
-	if (!node->IsTerminal()) {
-		ParseTerminalNodes(triangles, node->FetchRightNode());
-		ParseTerminalNodes(triangles, node->FetchLeftNode());
-	} else {
-		ConvertLedgeToVertices(node->FetchCompactNode(), triangles);
+		if (!node) {
+			continue;
+		}
+
+		if (!node->IsTerminal()) {
+			stack.push(node->FetchRightNode());
+			stack.push(node->FetchLeftNode());
+		} else {
+			ConvertLedgeToVertices(node->FetchCompactNode(), triangles);
+		}
 	}
 }
 

@@ -53,8 +53,6 @@ private:
 		const PHYData &data) const -> Format::ivpcompactsurface_t *;
 	auto ParseVertices(
 		std::vector<Triangle> &triangles) const -> void;
-	auto ParseTerminalNodes(std::vector<Triangle> &triangles,
-	                        Format::ivpcompactledgenode_t *node) const -> void;
 	auto ParseMOPPVertices(std::vector<Triangle> &triangles) const -> void;
 	auto ConvertLedgeToVertices(Format::ivpcompactledge_t *node,
 	                            std::vector<Triangle> &triangles) const ->
