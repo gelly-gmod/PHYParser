@@ -1,4 +1,5 @@
 #include "BSP.h"
+#include <stdexcept>
 
 #include "format/bsp/dphysmodel_t.h"
 
