@@ -15,7 +15,7 @@ struct ivpcompactledge_t {
 	unsigned int dummy : 4;
 	unsigned int size_div_16 : 24;
 
-	short n_triangles;
+	unsigned short n_triangles;
 	short unknown;
 };
 }

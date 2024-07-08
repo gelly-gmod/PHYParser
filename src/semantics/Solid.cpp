@@ -7,9 +7,10 @@
 
 #include <stack>
 
-namespace PHYParser::Format {
-struct ivpcompacttriangle_t;
-}
+#define MAKEID(a, b, c, d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
+
+constexpr int VPHYSICS_CLASSIC_ID = MAKEID('V', 'P', 'H', 'Y');
+constexpr int VPHYSICS_SWAPPED_ID = MAKEID('Y', 'H', 'P', 'V');
 
 namespace PHYParser {
 namespace Semantics {
@@ -17,7 +18,11 @@ Solid::Solid(const PHYData &data, size_t offset)
 	: dataOffset(offset),
 	  header(ParseHeader(data)),
 	  surface(ParseSurface(data)) {
-	// atleast for now, we don't support IVPMOPP
+	printf("vphy id: 0x%08X\n", header->vphysicsID);
+	if (header->vphysicsID != VPHYSICS_CLASSIC_ID && header->vphysicsID != VPHYSICS_SWAPPED_ID) {
+		throw UnsupportedModelType(static_cast<Format::ModelType>(header->modelType));
+	}
+
 	if (header->modelType == static_cast<short>(Format::ModelType::IVPMOPP)) {
 		moppHeader = ParseMOPPHeader(data);
 		mopp = ParseMOPPSurface(data);
@@ -25,7 +30,7 @@ Solid::Solid(const PHYData &data, size_t offset)
 	} else if (header->modelType == static_cast<short>(Format::ModelType::IVPCompactSurface)) {
 		ParseVertices(triangles);
 	} else {
-		throw UnsupportedModelType(Format::ModelType::Unknown);
+		throw UnsupportedModelType(static_cast<Format::ModelType>(header->modelType));
 	}
 }
 
@@ -79,19 +84,19 @@ auto Solid::ParseVertices(
 		Format::ivpcompactledgenode_t>(
 		surface, surface->offset_ledgetree_root);
 
-	std::stack<Format::ivpcompactledgenode_t *> nodeStack;
-	nodeStack.push(node);
+	ParseTerminalNodes(triangles, node);
+}
 
-	while (!nodeStack.empty()) {
-		node = nodeStack.top();
-		nodeStack.pop();
+auto Solid::ParseTerminalNodes(std::vector<Triangle> &triangles, Format::ivpcompactledgenode_t *node) const -> void {
+	if (!node) {
+		return;
+	}
 
-		if (node->IsTerminal()) {
-			ConvertLedgeToVertices(node->FetchCompactNode(), triangles);
-		} else {
-			nodeStack.push(node->FetchLeftNode());
-			nodeStack.push(node->FetchRightNode());
-		}
+	if (!node->IsTerminal()) {
+		ParseTerminalNodes(triangles, node->FetchRightNode());
+		ParseTerminalNodes(triangles, node->FetchLeftNode());
+	} else {
+		ConvertLedgeToVertices(node->FetchCompactNode(), triangles);
 	}
 }
 
@@ -123,27 +128,35 @@ auto Solid::ConvertLedgeToVertices(Format::ivpcompactledge_t *node,
                                    std::vector<Triangle> &triangles) const ->
 	void {
 	const auto triangleCount = node->n_triangles;
-	auto *vertexPointArray = ViewOffsetFromSection<Format::VectorAlign16>(
+	auto *vertexPointArray = ViewOffsetFromSection<char>(
 		node, node->c_point_offset);
-	const auto *triangleArray = reinterpret_cast<const
-		Format::ivpcompacttriangle_t *>
-	(
-		node + 1);
+	const auto *triangleArray = ViewOffsetFromSection<Format::ivpcompacttriangle_t>(
+		node, sizeof(Format::ivpcompactledge_t));
 
 	if (triangleCount <= 0) {
 		return;
 	}
 
+	auto vertexIndex = 0;
 	for (int i = 0; i < triangleCount; i++) {
 		Triangle triangle = {};
 		const auto *triangleData = triangleArray + i;
 
-		triangle.vertices[0] = vertexPointArray[triangleData->edges[0].
-			start_point_index];
-		triangle.vertices[1] = vertexPointArray[triangleData->edges[1].
-			start_point_index];
-		triangle.vertices[2] = vertexPointArray[triangleData->edges[2].
-			start_point_index];
+		if (vertexIndex >= triangleCount * 3) {
+			break;
+		}
+
+		if (i != triangleData->tri_index) {
+			continue;
+		}
+
+		for (int k = 0; k < 3; k++) {
+			const auto *vertex = reinterpret_cast<float *>(
+				vertexPointArray + triangleData->edges[k].start_point_index * 16);
+
+			triangle.vertices[k] = {vertex[0], vertex[1], vertex[2]};
+			vertexIndex++;
+		}
 
 		triangles.push_back(triangle);
 	}

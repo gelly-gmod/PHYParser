@@ -6,14 +6,14 @@ namespace PHYParser::Format {
 struct ivpcompactledgenode_t {
 	int offset_right_node;
 	int offset_compact_node;
-	// THIS IS *NOT* ANOTHER NODE, THE LEFT NODE IS offset_right_node + 1
 	float center[3];
 	float radius;
 	unsigned char box_sizes[3];
 	unsigned char unknown_0;
 
 	ivpcompactledgenode_t *FetchLeftNode() {
-		return this + 1;
+		return reinterpret_cast<ivpcompactledgenode_t *>(
+			reinterpret_cast<char *>(this) + sizeof(ivpcompactledgenode_t));
 	}
 
 	ivpcompactledgenode_t *FetchRightNode() {

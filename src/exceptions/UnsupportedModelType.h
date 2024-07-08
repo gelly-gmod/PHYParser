@@ -12,9 +12,7 @@ public:
 	}
 
 	[[nodiscard]] auto what() const noexcept -> const char * override {
-		return modelType == Format::ModelType::IVPCompactSurface
-			       ? "IVPCompactSurface is not supported"
-			       : "IVPMOPP is not supported";
+		return "Unsupported model type";
 	}
 
 	[[nodiscard]] auto GetModelType() const noexcept -> Format::ModelType {

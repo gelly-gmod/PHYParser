@@ -100,7 +100,8 @@ auto RenderFrame(const RenderingContext &ctx) -> void {
 
 	DrawText("Press SPACE to toggle wireframe", 10, screenHeight - 30, 20,
 	         WHITE);
-	DrawText(TextFormat("Load time: %.2fms | Total triangles: %d triangles", ctx.loadTimeMs, ctx.totalTriangles), 10,
+	DrawText(TextFormat("Load time: %.2fms | Total triangles: %d triangles", ctx.loadTimeMs, ctx.totalTriangles),
+	         10,
 	         screenHeight - 60, 20, WHITE);
 
 	EndDrawing();
@@ -130,7 +131,7 @@ auto CreateDefaultRenderingContext(
 			.position = {10.0f, -10.0f, 10.0f},
 			.target = {0.0f, 0.0f, 0.0f},
 			.up = {0.0f, -1.0f, 0.0f},
-			.fovy = 45.0f,
+			.fovy = 65.0f,
 			.projection = CAMERA_PERSPECTIVE
 		},
 		.bmodels = std::move(models),
@@ -159,43 +160,39 @@ auto CreateDefaultRenderingContext(
 		mesh.normals = nullptr;
 		mesh.tangents = nullptr;
 		mesh.colors = new unsigned char[mesh.vertexCount * 4];
-		mesh.indices = new unsigned short[mesh.triangleCount * 3];
+		mesh.indices = nullptr;
 
-		for (size_t i = 0; i < mesh.vertexCount; i += 3) {
+		size_t currentVertex = 0;
+		for (size_t i = 0; i < mesh.triangleCount; i++) {
 			ctx.totalTriangles++;
 
-			Vector3 v0 = {solid.GetTriangles()[i / 3].vertices[0].x,
-			              solid.GetTriangles()[i / 3].vertices[0].y,
-			              solid.GetTriangles()[i / 3].vertices[0].z};
+			Vector3 v0 = {solid.GetTriangles()[i].vertices[0].x,
+			              solid.GetTriangles()[i].vertices[0].y,
+			              solid.GetTriangles()[i].vertices[0].z};
 
-			Vector3 v1 = {solid.GetTriangles()[i / 3].vertices[1].x,
-			              solid.GetTriangles()[i / 3].vertices[1].y,
-			              solid.GetTriangles()[i / 3].vertices[1].z};
+			Vector3 v1 = {solid.GetTriangles()[i].vertices[1].x,
+			              solid.GetTriangles()[i].vertices[1].y,
+			              solid.GetTriangles()[i].vertices[1].z};
 
-			Vector3 v2 = {solid.GetTriangles()[i / 3].vertices[2].x,
-			              solid.GetTriangles()[i / 3].vertices[2].y,
-			              solid.GetTriangles()[i / 3].vertices[2].z};
+			Vector3 v2 = {solid.GetTriangles()[i].vertices[2].x,
+			              solid.GetTriangles()[i].vertices[2].y,
+			              solid.GetTriangles()[i].vertices[2].z};
 
 			auto *vertices = reinterpret_cast<Vector3 *>(mesh.vertices);
-			vertices[i] = v0;
-			vertices[i + 1] = v1;
-			vertices[i + 2] = v2;
-
-			mesh.indices[i] = i;
-			mesh.indices[i + 1] = i + 1;
-			mesh.indices[i + 2] = i + 2;
+			vertices[currentVertex++] = v0;
+			vertices[currentVertex++] = v1;
+			vertices[currentVertex++] = v2;
 
 			for (int j = 0; j < 3; ++j) {
-				mesh.colors[i * 4 + j * 4] = GetRandomValue(0, 255);
-				mesh.colors[i * 4 + j * 4 + 1] = GetRandomValue(0, 255);
-				mesh.colors[i * 4 + j * 4 + 2] = GetRandomValue(0, 255);
-				mesh.colors[i * 4 + j * 4 + 3] = 255;
+				mesh.colors[(currentVertex - 3 + j) * 4 + 0] = GetRandomValue(0, 255);
+				mesh.colors[(currentVertex - 3 + j) * 4 + 1] = GetRandomValue(0, 255);
+				mesh.colors[(currentVertex - 3 + j) * 4 + 2] = GetRandomValue(0, 255);
+				mesh.colors[(currentVertex - 3 + j) * 4 + 3] = 255;
 			}
 		}
 
 		UploadMesh(&mesh, false);
 		delete[] mesh.vertices;
-		delete[] mesh.indices;
 		delete[] mesh.colors;
 		auto model = LoadModelFromMesh(mesh);
 		ctx.models.push_back(model);
