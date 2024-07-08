@@ -22,7 +22,7 @@ It should work on GCC, but it has not been tested.
 
 ### PHY parsing
 
-```
+```c++
 #include <PHY.h>
 
 int main() {
@@ -44,7 +44,7 @@ int main() {
 
 ### BSP parsing
 
-```
+```c++
 #include <BSP.h>
 
 int main() {
