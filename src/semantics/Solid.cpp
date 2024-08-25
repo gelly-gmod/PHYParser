@@ -18,7 +18,6 @@ Solid::Solid(const PHYData &data, size_t offset)
 	: dataOffset(offset),
 	  header(ParseHeader(data)),
 	  surface(ParseSurface(data)) {
-	printf("vphy id: 0x%08X\n", header->vphysicsID);
 	if (header->vphysicsID != VPHYSICS_CLASSIC_ID && header->vphysicsID != VPHYSICS_SWAPPED_ID) {
 		throw UnsupportedModelType(static_cast<Format::ModelType>(header->modelType));
 	}

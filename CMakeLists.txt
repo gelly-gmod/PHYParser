@@ -28,6 +28,7 @@ add_library(PHYParser STATIC
         src/BSP.h
         src/format/ivpcompactmopp_t.h
         src/format/moppsurfaceheader_t.h
+        src/format/bsp/dphysdisp_t.h
 )
 
 target_include_directories(PHYParser PUBLIC src)

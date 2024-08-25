@@ -38,6 +38,8 @@ public:
 	 */
 	[[nodiscard]] auto GetModel(int index) const -> const Model &;
 
+	[[nodiscard]] auto IsDisplacementDataAvailable() const noexcept -> bool;
+
 private:
 	PHY::ParserInput input;
 	PHYData data;

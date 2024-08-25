@@ -229,6 +229,11 @@ auto main() -> int {
 			}
 		} else {
 			const auto bsp = PHYParser::BSP::BSP{LoadPHYFile(inputFile)};
+			if (!bsp.IsDisplacementDataAvailable()) {
+				util::Prompt("BSP file contains unparsed displacement data",
+				             "This file contains displacement data which is not yet supported by the library.");
+			}
+
 			for (int i = 0; i < bsp.GetModelCount(); ++i) {
 				bmodels.push_back(bsp.GetModel(i));
 			}

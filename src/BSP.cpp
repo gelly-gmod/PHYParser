@@ -24,6 +24,10 @@ auto BSP::GetModel(int index) const -> const Model & {
 	return models[index];
 }
 
+auto BSP::IsDisplacementDataAvailable() const noexcept -> bool {
+	return header.lumps[Format::LUMP_2009_PHYSDISP].filelen <= 0;
+}
+
 auto BSP::ParseHeader(
 	const PHYData &data) const -> Format::dheader_t {
 	return *ViewOffsetAsSection<Format::dheader_t>(data, 0);
